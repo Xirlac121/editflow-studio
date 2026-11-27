@@ -12,7 +12,9 @@ import {
   RefreshCw,
   Settings as SettingsIcon,
   Smartphone,
+  Sparkles,
   Sun,
+  Trash2,
   Upload,
 } from 'lucide-react';
 import { useStudio } from '../context/StudioContext';
@@ -29,6 +31,9 @@ export const SettingsView: React.FC = () => {
     connectSupabase,
     disconnectSupabase,
     pushAllToCloud,
+    hasSampleData,
+    clearSampleData,
+    resetAllWorkspaceData,
     exportBackupJson,
     exportBackupCsv,
     importBackupJson,
@@ -45,6 +50,7 @@ export const SettingsView: React.FC = () => {
   const [sbUrl, setSbUrl] = useState(cloudCredentials.url);
   const [sbKey, setSbKey] = useState(cloudCredentials.anonKey);
   const [showSql, setShowSql] = useState(false);
+  const [confirmResetAll, setConfirmResetAll] = useState(false);
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -127,9 +133,75 @@ export const SettingsView: React.FC = () => {
           Ajustes, Nube y Respaldos
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-          Sincronización en tiempo real entre PC y celular, seguridad con PIN, modo PWA y exportación de datos.
+          Sincronización en tiempo real entre PC y celular, limpieza de ejemplos, seguridad con PIN y respaldos.
         </p>
       </div>
+
+      {/* =====================================================================
+          0. LIMPIEZA DE DATOS DE EJEMPLO / EMPEZAR EN LIMPIO
+      ===================================================================== */}
+      <section className="rounded-[30px] bg-white dark:bg-obsidian-900 border border-violet-accent/35 p-6 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-accent text-obsidian-950">
+              <Sparkles className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="font-display text-lg font-bold">
+                Limpiar Datos de Ejemplo / Reiniciar Estudio
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Elimina con un clic los proyectos, clientes y cotizaciones de prueba (tanto en pantalla como en Supabase).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={clearSampleData}
+            className="inline-flex items-center gap-2 rounded-2xl bg-lime-accent px-5 py-2.5 text-xs font-extrabold text-obsidian-950 shadow-glow-lime hover:bg-lime-hover transition-transform active:scale-95"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span>
+              {hasSampleData
+                ? 'Borrar solo los datos de ejemplo (Recomendado)'
+                : 'Datos de ejemplo ya eliminados ✓'}
+            </span>
+          </button>
+
+          {!confirmResetAll ? (
+            <button
+              type="button"
+              onClick={() => setConfirmResetAll(true)}
+              className="inline-flex items-center gap-2 rounded-2xl bg-red-500/10 border border-red-500/30 px-4 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500/20"
+            >
+              <span>Vaciar absolutamente todo el estudio</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  await resetAllWorkspaceData();
+                  setConfirmResetAll(false);
+                }}
+                className="rounded-2xl bg-red-500 px-4 py-2.5 text-xs font-extrabold text-white"
+              >
+                Sí, borrar todo y dejar en blanco
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmResetAll(false)}
+                className="rounded-2xl bg-slate-200 dark:bg-obsidian-800 px-3 py-2.5 text-xs font-bold"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* =====================================================================
           1. SUPABASE CLOUD REAL-TIME DATABASE
@@ -266,7 +338,7 @@ export const SettingsView: React.FC = () => {
         {showSql && (
           <div className="rounded-2xl bg-obsidian-950 border border-white/10 p-4 space-y-2">
             <p className="text-xs text-slate-300">
-              En tu cuenta gratuita de <strong>supabase.com</strong>, abre <strong>SQL Editor → New Query</strong>, pega este código y presiona <strong>Run</strong>. Luego pega tu URL y Anon Key arriba en tu PC y en tu celular:
+              En tu cuenta gratuita de <strong>supabase.com</strong>, abre <strong>SQL Editor → New Query</strong>, pega este código y presiona <strong>Run</strong>:
             </p>
             <pre className="max-h-56 overflow-y-auto rounded-xl bg-black/60 p-3 text-[11px] text-lime-accent font-mono">
               {SUPABASE_SETUP_SQL}
@@ -279,7 +351,6 @@ export const SettingsView: React.FC = () => {
           2. PIN LOCK SECURITY + STUDIO PROFILE
       ===================================================================== */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* PIN Settings */}
         <section className="rounded-[30px] bg-white dark:bg-obsidian-900 border border-slate-200 dark:border-white/10 p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -355,7 +426,6 @@ export const SettingsView: React.FC = () => {
           </form>
         </section>
 
-        {/* Studio Profile & Theme */}
         <section className="rounded-[30px] bg-white dark:bg-obsidian-900 border border-slate-200 dark:border-white/10 p-6 space-y-4">
           <h3 className="font-display text-lg font-bold">
             Identidad del Editor y Apariencia
@@ -395,7 +465,7 @@ export const SettingsView: React.FC = () => {
 
             <div>
               <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">
-                Nombre del Estudio (para PDFs y WhatsApp)
+                Nombre del Estudio (para PDFs, Recibos y Portal)
               </label>
               <input
                 type="text"

@@ -76,27 +76,34 @@ create table if not exists public.blocked_dates (
   notes text not null default ''
 );
 
--- Habilitar Row Level Security con acceso para el editor (App personal single-tenant)
+-- Habilitar Row Level Security y otorgar permisos explícitos a la API de Supabase (anon / authenticated)
 alter table public.studio_settings enable row level security;
 alter table public.clients enable row level security;
 alter table public.projects enable row level security;
 alter table public.quotes enable row level security;
 alter table public.blocked_dates enable row level security;
 
+grant usage on schema public to anon, authenticated;
+grant all on table public.studio_settings to anon, authenticated;
+grant all on table public.clients to anon, authenticated;
+grant all on table public.projects to anon, authenticated;
+grant all on table public.quotes to anon, authenticated;
+grant all on table public.blocked_dates to anon, authenticated;
+
 drop policy if exists "Studio single user full access settings" on public.studio_settings;
-create policy "Studio single user full access settings" on public.studio_settings for all using (true) with check (true);
+create policy "Studio single user full access settings" on public.studio_settings for all to anon, authenticated using (true) with check (true);
 
 drop policy if exists "Studio single user full access clients" on public.clients;
-create policy "Studio single user full access clients" on public.clients for all using (true) with check (true);
+create policy "Studio single user full access clients" on public.clients for all to anon, authenticated using (true) with check (true);
 
 drop policy if exists "Studio single user full access projects" on public.projects;
-create policy "Studio single user full access projects" on public.projects for all using (true) with check (true);
+create policy "Studio single user full access projects" on public.projects for all to anon, authenticated using (true) with check (true);
 
 drop policy if exists "Studio single user full access quotes" on public.quotes;
-create policy "Studio single user full access quotes" on public.quotes for all using (true) with check (true);
+create policy "Studio single user full access quotes" on public.quotes for all to anon, authenticated using (true) with check (true);
 
 drop policy if exists "Studio single user full access blocked_dates" on public.blocked_dates;
-create policy "Studio single user full access blocked_dates" on public.blocked_dates for all using (true) with check (true);
+create policy "Studio single user full access blocked_dates" on public.blocked_dates for all to anon, authenticated using (true) with check (true);
 
 -- Habilitar Realtime para sincronización instantánea entre PC y celular
 do $$

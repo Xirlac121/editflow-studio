@@ -1,7 +1,9 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
   Calendar,
+  CalendarOff,
   Cloud,
   CloudOff,
   DollarSign,
@@ -18,12 +20,16 @@ import {
   Sun,
   Users,
   X,
-  CalendarOff,
 } from 'lucide-react';
 import { useStudio } from '../context/StudioContext';
 import { ActiveTab, KANBAN_COLUMNS } from '../types/studio';
 
-const NAV_ITEMS: { id: ActiveTab; label: string; shortLabel: string; icon: React.ElementType }[] = [
+const NAV_ITEMS: {
+  id: ActiveTab;
+  label: string;
+  shortLabel: string;
+  icon: React.ElementType;
+}[] = [
   { id: 'dashboard', label: 'Resumen de hoy', shortLabel: 'Inicio', icon: Home },
   { id: 'kanban', label: 'Tablero Kanban', shortLabel: 'Kanban', icon: FolderKanban },
   { id: 'calendar', label: 'Calendario', shortLabel: 'Agenda', icon: Calendar },
@@ -72,7 +78,6 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     [clients]
   );
 
-  // Instant Spotlight search results
   const searchResults = useMemo(() => {
     const q = quickFilters.searchQuery.trim().toLowerCase();
     if (!q) return null;
@@ -130,23 +135,29 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-100 text-slate-900 dark:bg-obsidian-950 dark:text-white transition-colors duration-200">
+    <div className="relative min-h-screen flex bg-slate-100 text-slate-900 dark:bg-obsidian-950 dark:text-white transition-colors duration-200 overflow-x-hidden">
+      {/* Subtle Ambient Motion Graphics Orbs */}
+      <div className="pointer-events-none fixed -top-44 right-1/4 h-96 w-96 rounded-full bg-lime-accent/[0.07] blur-[130px] animate-orb-slow z-0" />
+      <div className="pointer-events-none fixed bottom-0 left-1/3 h-96 w-96 rounded-full bg-violet-accent/[0.08] blur-[140px] animate-orb-reverse z-0" />
+
       {/* =====================================================================
           DESKTOP FIXED SIDEBAR
       ===================================================================== */}
-      <aside className="hidden lg:flex lg:w-68 xl:w-72 lg:flex-col lg:fixed lg:inset-y-0 bg-white dark:bg-obsidian-900 border-r border-slate-200 dark:border-white/5 z-30 select-none">
-        {/* Brand Header */}
+      <aside className="hidden lg:flex lg:w-68 xl:w-72 lg:flex-col lg:fixed lg:inset-y-0 bg-white/95 dark:bg-obsidian-900/95 backdrop-blur-xl border-r border-slate-200 dark:border-white/5 z-30 select-none">
         <div className="flex items-center justify-between px-6 pt-6 pb-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-lime-accent text-obsidian-950 shadow-glow-lime">
+            <motion.div
+              whileHover={{ rotate: -8, scale: 1.06 }}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-lime-accent text-obsidian-950 shadow-glow-lime"
+            >
               <Film className="h-6 w-6 stroke-[2.4]" />
-            </div>
+            </motion.div>
             <div>
               <h1 className="font-display text-lg font-bold leading-tight tracking-tight">
                 {settings.studioName}
               </h1>
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                Suite de Edición Pro
+                Motion & Video Suite
               </span>
             </div>
           </div>
@@ -170,7 +181,10 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             <span className="flex items-center gap-2 truncate">
               {syncStatus === 'cloud_live' ? (
                 <>
-                  <Cloud className="h-4 w-4 shrink-0" />
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+                  </span>
                   <span>Supabase en vivo (PC + Móvil)</span>
                 </>
               ) : syncStatus === 'connecting' ? (
@@ -189,7 +203,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </button>
         </div>
 
-        {/* Main Navigation */}
+        {/* Main Navigation with Shared Spring Active Pill */}
         <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -199,14 +213,25 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 key={item.id}
                 type="button"
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3.5 rounded-2xl px-4 py-3.5 text-sm font-semibold transition-all ${
+                className={`relative w-full flex items-center gap-3.5 rounded-2xl px-4 py-3.5 text-sm font-semibold transition-colors ${
                   active
-                    ? 'bg-lime-accent text-obsidian-950 shadow-glow-lime font-bold'
+                    ? 'text-obsidian-950 font-extrabold'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-obsidian-800 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <Icon className={`h-5 w-5 ${active ? 'stroke-[2.5]' : 'stroke-[2]'}`} />
-                <span>{item.label}</span>
+                {active && (
+                  <motion.div
+                    layoutId="desktopActiveNavPill"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    className="absolute inset-0 rounded-2xl bg-lime-accent shadow-glow-lime"
+                  />
+                )}
+                <Icon
+                  className={`relative z-10 h-5 w-5 ${
+                    active ? 'stroke-[2.5]' : 'stroke-[2]'
+                  }`}
+                />
+                <span className="relative z-10">{item.label}</span>
               </button>
             );
           })}
@@ -215,19 +240,26 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             <button
               type="button"
               onClick={() => setActiveTab('settings')}
-              className={`w-full flex items-center gap-3.5 rounded-2xl px-4 py-3.5 text-sm font-semibold transition-all ${
+              className={`relative w-full flex items-center gap-3.5 rounded-2xl px-4 py-3.5 text-sm font-semibold transition-colors ${
                 activeTab === 'settings'
-                  ? 'bg-lime-accent text-obsidian-950 shadow-glow-lime font-bold'
+                  ? 'text-obsidian-950 font-extrabold'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-obsidian-800 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <Settings className="h-5 w-5" />
-              <span>Ajustes y Respaldo</span>
+              {activeTab === 'settings' && (
+                <motion.div
+                  layoutId="desktopActiveNavPill"
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  className="absolute inset-0 rounded-2xl bg-lime-accent shadow-glow-lime"
+                />
+              )}
+              <Settings className="relative z-10 h-5 w-5" />
+              <span className="relative z-10">Ajustes y Respaldo</span>
             </button>
           </div>
         </nav>
 
-        {/* Bottom Controls: Theme + Quick Lock */}
+        {/* Bottom Controls */}
         <div className="p-4 border-t border-slate-200 dark:border-white/5 space-y-2">
           <div className="flex items-center gap-2">
             <button
@@ -264,12 +296,10 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       {/* =====================================================================
           MAIN CONTENT AREA
       ===================================================================== */}
-      <div className="flex-1 flex flex-col lg:pl-72 min-w-0">
-        {/* Top Sticky Bar: Global Search + Quick Filters + Mobile Controls */}
-        <header className="sticky top-0 z-20 bg-slate-100/90 dark:bg-obsidian-950/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/5 px-4 sm:px-6 lg:px-8 py-3">
+      <div className="relative z-10 flex-1 flex flex-col lg:pl-72 min-w-0">
+        <header className="sticky top-0 z-20 bg-slate-100/85 dark:bg-obsidian-950/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/5 px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
-              {/* Mobile Brand Avatar */}
               <div className="flex lg:hidden items-center gap-2.5 shrink-0">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-lime-accent text-obsidian-950 font-display font-bold shadow-glow-lime">
                   {settings.editorName.slice(0, 1).toUpperCase()}
@@ -307,115 +337,125 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                   )}
                 </div>
 
-                {/* Instant Global Search Dropdown */}
-                {searchOpen && searchResults && (
-                  <div className="absolute left-0 right-0 mt-2 rounded-3xl bg-white dark:bg-obsidian-900 border border-slate-200 dark:border-white/15 shadow-2xl p-3 z-50 max-h-[70vh] overflow-y-auto">
-                    {searchResults.matchedProjects.length === 0 &&
-                    searchResults.matchedClients.length === 0 &&
-                    searchResults.matchedQuotes.length === 0 ? (
-                      <p className="py-6 text-center text-sm text-slate-400">
-                        Sin resultados para "{quickFilters.searchQuery}"
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {searchResults.matchedProjects.length > 0 && (
-                          <div>
-                            <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                              Proyectos
-                            </p>
-                            {searchResults.matchedProjects.map((p) => {
-                              const col = KANBAN_COLUMNS.find((c) => c.id === p.status);
-                              return (
+                <AnimatePresence>
+                  {searchOpen && searchResults && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                      transition={{ duration: 0.16 }}
+                      className="absolute left-0 right-0 mt-2 rounded-3xl bg-white dark:bg-obsidian-900 border border-slate-200 dark:border-white/15 shadow-2xl p-3 z-50 max-h-[70vh] overflow-y-auto"
+                    >
+                      {searchResults.matchedProjects.length === 0 &&
+                      searchResults.matchedClients.length === 0 &&
+                      searchResults.matchedQuotes.length === 0 ? (
+                        <p className="py-6 text-center text-sm text-slate-400">
+                          Sin resultados para "{quickFilters.searchQuery}"
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {searchResults.matchedProjects.length > 0 && (
+                            <div>
+                              <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Proyectos
+                              </p>
+                              {searchResults.matchedProjects.map((p) => {
+                                const col = KANBAN_COLUMNS.find(
+                                  (c) => c.id === p.status
+                                );
+                                return (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedProjectId(p.id);
+                                      setSearchOpen(false);
+                                    }}
+                                    className="w-full flex items-center justify-between rounded-2xl px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-obsidian-800 transition-colors"
+                                  >
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-semibold truncate">
+                                        {p.title}
+                                      </p>
+                                      <p className="text-xs text-slate-400 truncate">
+                                        {clientMap.get(p.clientId)?.name || 'Sin cliente'} •{' '}
+                                        {p.format}
+                                      </p>
+                                    </div>
+                                    <span className="ml-2 shrink-0 rounded-full bg-obsidian-800 px-2.5 py-0.5 text-[11px] font-medium text-lime-accent">
+                                      {col?.shortTitle}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {searchResults.matchedClients.length > 0 && (
+                            <div>
+                              <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Clientes
+                              </p>
+                              {searchResults.matchedClients.map((c) => (
                                 <button
-                                  key={p.id}
+                                  key={c.id}
                                   type="button"
                                   onClick={() => {
-                                    setSelectedProjectId(p.id);
+                                    setActiveTab('clients');
+                                    setSearchOpen(false);
+                                  }}
+                                  className="w-full flex items-center justify-between rounded-2xl px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-obsidian-800 transition-colors"
+                                >
+                                  <div>
+                                    <p className="text-sm font-semibold">{c.name}</p>
+                                    <p className="text-xs text-slate-400">{c.company}</p>
+                                  </div>
+                                  <span className="text-xs text-violet-400 font-semibold">
+                                    Ver ficha →
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {searchResults.matchedQuotes.length > 0 && (
+                            <div>
+                              <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Cotizaciones
+                              </p>
+                              {searchResults.matchedQuotes.map((qt) => (
+                                <button
+                                  key={qt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveTab('quotes');
                                     setSearchOpen(false);
                                   }}
                                   className="w-full flex items-center justify-between rounded-2xl px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-obsidian-800 transition-colors"
                                 >
                                   <div className="min-w-0">
                                     <p className="text-sm font-semibold truncate">
-                                      {p.title}
+                                      {qt.number} — {qt.title}
                                     </p>
                                     <p className="text-xs text-slate-400 truncate">
-                                      {clientMap.get(p.clientId)?.name || 'Sin cliente'} • {p.format}
+                                      {qt.clientNameSnapshot}
                                     </p>
                                   </div>
-                                  <span className="ml-2 shrink-0 rounded-full bg-obsidian-800 px-2.5 py-0.5 text-[11px] font-medium text-lime-accent">
-                                    {col?.shortTitle}
+                                  <span className="text-xs text-lime-accent font-semibold">
+                                    Cotización →
                                   </span>
                                 </button>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {searchResults.matchedClients.length > 0 && (
-                          <div>
-                            <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                              Clientes
-                            </p>
-                            {searchResults.matchedClients.map((c) => (
-                              <button
-                                key={c.id}
-                                type="button"
-                                onClick={() => {
-                                  setActiveTab('clients');
-                                  setSearchOpen(false);
-                                }}
-                                className="w-full flex items-center justify-between rounded-2xl px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-obsidian-800 transition-colors"
-                              >
-                                <div>
-                                  <p className="text-sm font-semibold">{c.name}</p>
-                                  <p className="text-xs text-slate-400">{c.company}</p>
-                                </div>
-                                <span className="text-xs text-violet-400 font-semibold">
-                                  Ver ficha →
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-
-                        {searchResults.matchedQuotes.length > 0 && (
-                          <div>
-                            <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                              Cotizaciones
-                            </p>
-                            {searchResults.matchedQuotes.map((qt) => (
-                              <button
-                                key={qt.id}
-                                type="button"
-                                onClick={() => {
-                                  setActiveTab('quotes');
-                                  setSearchOpen(false);
-                                }}
-                                className="w-full flex items-center justify-between rounded-2xl px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-obsidian-800 transition-colors"
-                              >
-                                <div className="min-w-0">
-                                  <p className="text-sm font-semibold truncate">
-                                    {qt.number} — {qt.title}
-                                  </p>
-                                  <p className="text-xs text-slate-400 truncate">
-                                    {qt.clientNameSnapshot}
-                                  </p>
-                                </div>
-                                <span className="text-xs text-lime-accent font-semibold">
-                                  Cotización →
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
-              {/* Right Header Quick Actions (Mobile + Desktop) */}
+              {/* Right Header Quick Actions */}
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
@@ -551,97 +591,120 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </div>
         </header>
 
-        {/* Main View Canvas */}
+        {/* Animated View Container */}
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 pb-28 lg:pb-12">
-          {children}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
 
       {/* =====================================================================
-          ALWAYS-VISIBLE FLOATING QUICK ACTION BUTTON (+) IN CORNER
+          ALWAYS-VISIBLE SPRING SPEED-DIAL FAB (+)
       ===================================================================== */}
-      {fabOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs"
-          onClick={() => setFabOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {fabOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 bg-black/55 backdrop-blur-xs"
+            onClick={() => setFabOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <div className="fixed right-4 bottom-24 lg:right-8 lg:bottom-8 z-50 flex flex-col items-end gap-2.5">
-        {fabOpen && (
-          <div className="flex flex-col items-end gap-2 mb-1 animate-in fade-in slide-in-from-bottom-2 duration-150">
-            <button
-              type="button"
-              onClick={() => {
-                setFabOpen(false);
-                setQuickCreateModal('project');
-              }}
-              className="flex items-center gap-3 rounded-full bg-obsidian-900 text-white border border-white/15 pl-4 pr-3 py-2.5 shadow-xl hover:border-lime-accent transition-all"
+        <AnimatePresence>
+          {fabOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.92 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 26 }}
+              className="flex flex-col items-end gap-2 mb-1"
             >
-              <span className="text-sm font-bold">Nuevo Proyecto</span>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-lime-accent text-obsidian-950">
-                <Film className="h-4 w-4" />
-              </span>
-            </button>
+              {[
+                {
+                  id: 'project' as const,
+                  label: 'Nuevo Proyecto',
+                  icon: Film,
+                  color: 'bg-lime-accent text-obsidian-950',
+                },
+                {
+                  id: 'quote' as const,
+                  label: 'Armar Cotización',
+                  icon: FileText,
+                  color: 'bg-violet-accent text-obsidian-950',
+                },
+                {
+                  id: 'client' as const,
+                  label: 'Registrar Cliente',
+                  icon: Users,
+                  color: 'bg-sky-400 text-obsidian-950',
+                },
+                {
+                  id: 'block_date' as const,
+                  label: 'Bloquear Fechas',
+                  icon: CalendarOff,
+                  color: 'bg-tangerine-accent text-white',
+                },
+              ].map((act, idx) => {
+                const ActIcon = act.icon;
+                return (
+                  <motion.button
+                    key={act.id}
+                    type="button"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.04 }}
+                    whileHover={{ scale: 1.04 }}
+                    onClick={() => {
+                      setFabOpen(false);
+                      setQuickCreateModal(act.id);
+                    }}
+                    className="flex items-center gap-3 rounded-full bg-obsidian-900 text-white border border-white/15 pl-4 pr-3 py-2.5 shadow-xl hover:border-lime-accent transition-colors"
+                  >
+                    <span className="text-sm font-bold">{act.label}</span>
+                    <span
+                      className={`flex h-8 w-8 items-center justify-center rounded-full ${act.color}`}
+                    >
+                      <ActIcon className="h-4 w-4" />
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            <button
-              type="button"
-              onClick={() => {
-                setFabOpen(false);
-                setQuickCreateModal('quote');
-              }}
-              className="flex items-center gap-3 rounded-full bg-obsidian-900 text-white border border-white/15 pl-4 pr-3 py-2.5 shadow-xl hover:border-violet-accent transition-all"
-            >
-              <span className="text-sm font-bold">Armar Cotización</span>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-accent text-obsidian-950">
-                <FileText className="h-4 w-4" />
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setFabOpen(false);
-                setQuickCreateModal('client');
-              }}
-              className="flex items-center gap-3 rounded-full bg-obsidian-900 text-white border border-white/15 pl-4 pr-3 py-2.5 shadow-xl hover:border-sky-400 transition-all"
-            >
-              <span className="text-sm font-bold">Registrar Cliente</span>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-400 text-obsidian-950">
-                <Users className="h-4 w-4" />
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setFabOpen(false);
-                setQuickCreateModal('block_date');
-              }}
-              className="flex items-center gap-3 rounded-full bg-obsidian-900 text-white border border-white/15 pl-4 pr-3 py-2.5 shadow-xl hover:border-tangerine-accent transition-all"
-            >
-              <span className="text-sm font-bold">Bloquear Fechas</span>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-tangerine-accent text-white">
-                <CalendarOff className="h-4 w-4" />
-              </span>
-            </button>
-          </div>
-        )}
-
-        <button
+        <motion.button
           type="button"
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
           onClick={() => setFabOpen((prev) => !prev)}
           aria-label="Acción rápida"
-          className={`flex h-14 w-14 items-center justify-center rounded-full bg-lime-accent text-obsidian-950 shadow-glow-lime transition-transform duration-200 active:scale-95 ${
-            fabOpen ? 'rotate-45' : 'hover:scale-105'
-          }`}
+          className="motion-shimmer flex h-14 w-14 items-center justify-center rounded-full bg-lime-accent text-obsidian-950 shadow-glow-lime"
         >
-          <Plus className="h-7 w-7 stroke-[2.8]" />
-        </button>
+          <motion.div
+            animate={{ rotate: fabOpen ? 45 : 0 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 22 }}
+          >
+            <Plus className="h-7 w-7 stroke-[2.8]" />
+          </motion.div>
+        </motion.button>
       </div>
 
       {/* =====================================================================
-          MOBILE BOTTOM NAVIGATION BAR (5 MAIN DESTINATIONS)
+          MOBILE BOTTOM NAVIGATION BAR WITH SPRING INDICATOR
       ===================================================================== */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-obsidian-900/95 backdrop-blur-xl border-t border-white/10 px-2 pt-2 pb-safe select-none">
         <div className="grid grid-cols-5 gap-1 max-w-md mx-auto">
@@ -655,14 +718,21 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 onClick={() => setActiveTab(item.id)}
                 className="flex flex-col items-center justify-center py-1.5 gap-1 focus:outline-none"
               >
-                <div
-                  className={`flex h-9 w-12 items-center justify-center rounded-2xl transition-all ${
-                    active
-                      ? 'bg-lime-accent text-obsidian-950 shadow-glow-lime'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Icon className={`h-5 w-5 ${active ? 'stroke-[2.5]' : 'stroke-[1.9]'}`} />
+                <div className="relative flex h-9 w-12 items-center justify-center rounded-2xl">
+                  {active && (
+                    <motion.div
+                      layoutId="mobileActiveNavPill"
+                      transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                      className="absolute inset-0 rounded-2xl bg-lime-accent shadow-glow-lime"
+                    />
+                  )}
+                  <Icon
+                    className={`relative z-10 h-5 w-5 ${
+                      active
+                        ? 'text-obsidian-950 stroke-[2.5]'
+                        : 'text-slate-400 stroke-[1.9]'
+                    }`}
+                  />
                 </div>
                 <span
                   className={`text-[10px] font-semibold ${
@@ -678,23 +748,29 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       </nav>
 
       {/* =====================================================================
-          TOAST NOTIFICATIONS
+          ANIMATED TOAST NOTIFICATIONS
       ===================================================================== */}
-      <div className="fixed top-4 right-4 z-[90] flex flex-col gap-2 pointer-events-none max-w-sm">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`pointer-events-auto rounded-2xl px-4 py-3 text-sm font-semibold shadow-2xl border backdrop-blur-xl transition-all ${
-              t.type === 'error'
-                ? 'bg-red-950/90 border-red-500/40 text-red-200'
-                : t.type === 'info'
-                ? 'bg-obsidian-900/95 border-white/15 text-white'
-                : 'bg-obsidian-900/95 border-lime-accent/50 text-lime-accent'
-            }`}
-          >
-            {t.text}
-          </div>
-        ))}
+      <div className="fixed top-4 right-4 z-[95] flex flex-col gap-2 pointer-events-none max-w-sm">
+        <AnimatePresence>
+          {toasts.map((t) => (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, y: -16, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 40, scale: 0.94 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+              className={`pointer-events-auto rounded-2xl px-4 py-3 text-sm font-semibold shadow-2xl border backdrop-blur-xl ${
+                t.type === 'error'
+                  ? 'bg-red-950/90 border-red-500/40 text-red-200'
+                  : t.type === 'info'
+                  ? 'bg-obsidian-900/95 border-white/15 text-white'
+                  : 'bg-obsidian-900/95 border-lime-accent/50 text-lime-accent'
+              }`}
+            >
+              {t.text}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -31,7 +31,7 @@ export function getStoredCloudCredentials(): CloudCredentials {
   }
 
   return {
-    url: envUrl?.trim() || '',
+    url: (envUrl?.trim() || '').replace(/\/+$/, ''),
     anonKey: envKey?.trim() || '',
   };
 }
@@ -40,7 +40,7 @@ export function saveCloudCredentials(creds: CloudCredentials) {
   localStorage.setItem(
     CREDENTIALS_STORAGE_KEY,
     JSON.stringify({
-      url: creds.url.trim(),
+      url: creds.url.trim().replace(/\/+$/, ''),
       anonKey: creds.anonKey.trim(),
     })
   );
@@ -331,15 +331,40 @@ alter table public.projects enable row level security;
 alter table public.quotes enable row level security;
 alter table public.blocked_dates enable row level security;
 
-drop policy if exists "Studio single user full access settings" on public.studio_settings;
-create policy "Studio single user full access settings" on public.studio_settings for all using (true) with check (true);
-drop policy if exists "Studio single user full access clients" on public.clients;
-create policy "Studio single user full access clients" on public.clients for all using (true) with check (true);
-drop policy if exists "Studio single user full access projects" on public.projects;
-create policy "Studio single user full access projects" on public.projects for all using (true) with check (true);
-drop policy if exists "Studio single user full access quotes" on public.quotes;
-create policy "Studio single user full access quotes" on public.quotes for all using (true) with check (true);
-drop policy if exists "Studio single user full access blocked_dates" on public.blocked_dates;
-create policy "Studio single user full access blocked_dates" on public.blocked_dates for all using (true) with check (true);
+-- Permisos explícitos para el rol público (anon) y autenticado de Supabase API
+grant usage on schema public to anon, authenticated;
+grant all on table public.studio_settings to anon, authenticated;
+grant all on table public.clients to anon, authenticated;
+grant all on table public.projects to anon, authenticated;
+grant all on table public.quotes to anon, authenticated;
+grant all on table public.blocked_dates to anon, authenticated;
 
-alter publication supabase_realtime add table public.projects, public.clients, public.quotes, public.blocked_dates, public.studio_settings;`;
+drop policy if exists "Studio single user full access settings" on public.studio_settings;
+create policy "Studio single user full access settings" on public.studio_settings for all to anon, authenticated using (true) with check (true);
+drop policy if exists "Studio single user full access clients" on public.clients;
+create policy "Studio single user full access clients" on public.clients for all to anon, authenticated using (true) with check (true);
+drop policy if exists "Studio single user full access projects" on public.projects;
+create policy "Studio single user full access projects" on public.projects for all to anon, authenticated using (true) with check (true);
+drop policy if exists "Studio single user full access quotes" on public.quotes;
+create policy "Studio single user full access quotes" on public.quotes for all to anon, authenticated using (true) with check (true);
+drop policy if exists "Studio single user full access blocked_dates" on public.blocked_dates;
+create policy "Studio single user full access blocked_dates" on public.blocked_dates for all to anon, authenticated using (true) with check (true);
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'projects') then
+    alter publication supabase_realtime add table public.projects;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'clients') then
+    alter publication supabase_realtime add table public.clients;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'quotes') then
+    alter publication supabase_realtime add table public.quotes;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'blocked_dates') then
+    alter publication supabase_realtime add table public.blocked_dates;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'studio_settings') then
+    alter publication supabase_realtime add table public.studio_settings;
+  end if;
+end $$;`;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StudioProvider, useStudio } from './context/StudioContext';
 import { PinLockScreen } from './components/PinLockScreen';
 import { AppShell } from './components/AppShell';
@@ -10,6 +10,7 @@ import { CalendarView, BlockDateModal } from './components/CalendarView';
 import { ClientsView, ClientModal } from './components/ClientsView';
 import { QuotesView, QuoteBuilderModal } from './components/QuotesView';
 import { SettingsView } from './components/SettingsView';
+import { ClientPortalView } from './components/ClientPortalView';
 import { ProjectStatus } from './types/studio';
 
 const StudioWorkspace: React.FC = () => {
@@ -18,10 +19,36 @@ const StudioWorkspace: React.FC = () => {
     activeTab,
     quickCreateModal,
     setQuickCreateModal,
+    previewPortalProjectId,
+    setPreviewPortalProjectId,
+    projects,
+    clients,
+    settings,
   } = useStudio();
 
   const [kanbanInitialStatus, setKanbanInitialStatus] =
     useState<ProjectStatus>('en_edicion');
+
+  // Editor in-app live preview of Client Portal
+  if (previewPortalProjectId) {
+    const targetProject = projects.find((p) => p.id === previewPortalProjectId);
+    if (targetProject) {
+      const cli = clients.find((c) => c.id === targetProject.clientId);
+      return (
+        <ClientPortalView
+          projectId={targetProject.id}
+          previewData={{
+            project: targetProject,
+            studioName: settings.studioName,
+            editorName: settings.editorName,
+            currency: settings.currency,
+            clientName: cli?.name,
+            onExitPreview: () => setPreviewPortalProjectId(null),
+          }}
+        />
+      );
+    }
+  }
 
   if (isLocked) {
     return <PinLockScreen />;
@@ -45,10 +72,8 @@ const StudioWorkspace: React.FC = () => {
         {activeTab === 'settings' && <SettingsView />}
       </AppShell>
 
-      {/* Slide-over Project Sheet accessible from any view */}
       <ProjectDetailSheet />
 
-      {/* Global Speed-Dial Quick Create Modals */}
       {quickCreateModal === 'project' && (
         <NewProjectModal
           initialStatus={kanbanInitialStatus}
@@ -69,6 +94,16 @@ const StudioWorkspace: React.FC = () => {
 };
 
 export function App() {
+  // Check if opened as a Public Client Tracking Link (?portal=proj-xxx)
+  const publicPortalProjectId = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('portal');
+  }, []);
+
+  if (publicPortalProjectId) {
+    return <ClientPortalView projectId={publicPortalProjectId} />;
+  }
+
   return (
     <StudioProvider>
       <StudioWorkspace />

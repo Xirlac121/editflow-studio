@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Delete, Film, Lock, ShieldCheck } from 'lucide-react';
 import { useStudio } from '../context/StudioContext';
 
@@ -58,15 +59,22 @@ export const PinLockScreen: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-obsidian-950 text-white px-6 select-none overflow-hidden">
-      {/* Ambient studio glow */}
-      <div className="pointer-events-none absolute -top-32 -left-24 h-80 w-80 rounded-full bg-violet-accent/20 blur-[110px]" />
-      <div className="pointer-events-none absolute -bottom-32 -right-24 h-80 w-80 rounded-full bg-lime-accent/20 blur-[110px]" />
+      {/* Animated Ambient Studio Glows */}
+      <div className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-violet-accent/25 blur-[120px] animate-orb-slow" />
+      <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-lime-accent/25 blur-[120px] animate-orb-reverse" />
 
-      <div className="relative w-full max-w-sm flex flex-col items-center">
-        {/* Brand Badge */}
-        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-lime-accent text-obsidian-950 shadow-glow-lime">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+        className="relative w-full max-w-sm flex flex-col items-center"
+      >
+        <motion.div
+          whileHover={{ rotate: -8, scale: 1.06 }}
+          className="motion-shimmer mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-lime-accent text-obsidian-950 shadow-glow-lime"
+        >
           <Film className="h-8 w-8 stroke-[2.4]" />
-        </div>
+        </motion.div>
 
         <h1 className="font-display text-2xl font-bold tracking-tight text-white">
           {settings.studioName}
@@ -85,13 +93,15 @@ export const PinLockScreen: React.FC = () => {
           {Array.from({ length: targetLen }).map((_, idx) => {
             const filled = idx < entered.length;
             return (
-              <div
+              <motion.div
                 key={idx}
-                className={`h-4 w-4 rounded-full transition-all duration-150 ${
+                animate={filled ? { scale: [1, 1.3, 1.1] } : { scale: 1 }}
+                transition={{ duration: 0.18 }}
+                className={`h-4 w-4 rounded-full transition-colors duration-150 ${
                   errorShake
-                    ? 'bg-red-500 scale-110 shadow-[0_0_12px_rgba(239,68,68,0.8)]'
+                    ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.8)]'
                     : filled
-                    ? 'bg-lime-accent scale-110 shadow-[0_0_14px_rgba(217,249,80,0.85)]'
+                    ? 'bg-lime-accent shadow-[0_0_14px_rgba(217,249,80,0.85)]'
                     : 'bg-obsidian-700 border border-white/15'
                 }`}
               />
@@ -99,43 +109,50 @@ export const PinLockScreen: React.FC = () => {
           })}
         </div>
 
-        {/* Numeric Keypad (Bank App Style) */}
+        {/* Numeric Keypad */}
         <div className="grid w-full max-w-[290px] grid-cols-3 gap-3.5">
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
-            <button
+          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num, i) => (
+            <motion.button
               key={num}
               type="button"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.025 }}
+              whileTap={{ scale: 0.92 }}
               onClick={() => handleDigit(num)}
-              className="flex h-16 w-full items-center justify-center rounded-3xl bg-obsidian-800/90 border border-white/5 text-2xl font-bold text-white transition-all active:scale-95 hover:bg-obsidian-700 hover:border-lime-accent/40 focus:outline-none"
+              className="flex h-16 w-full items-center justify-center rounded-3xl bg-obsidian-800/90 border border-white/5 text-2xl font-bold text-white transition-colors hover:bg-obsidian-700 hover:border-lime-accent/40 focus:outline-none"
             >
               {num}
-            </button>
+            </motion.button>
           ))}
 
-          <button
+          <motion.button
             type="button"
+            whileTap={{ scale: 0.92 }}
             onClick={handleClear}
-            className="flex h-16 w-full items-center justify-center rounded-3xl bg-obsidian-900/70 border border-white/5 text-xs font-semibold uppercase tracking-wider text-slate-400 transition-all active:scale-95 hover:text-white"
+            className="flex h-16 w-full items-center justify-center rounded-3xl bg-obsidian-900/70 border border-white/5 text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-white"
           >
             Borrar
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
             type="button"
+            whileTap={{ scale: 0.92 }}
             onClick={() => handleDigit('0')}
-            className="flex h-16 w-full items-center justify-center rounded-3xl bg-obsidian-800/90 border border-white/5 text-2xl font-bold text-white transition-all active:scale-95 hover:bg-obsidian-700 hover:border-lime-accent/40 focus:outline-none"
+            className="flex h-16 w-full items-center justify-center rounded-3xl bg-obsidian-800/90 border border-white/5 text-2xl font-bold text-white transition-colors hover:bg-obsidian-700 hover:border-lime-accent/40 focus:outline-none"
           >
             0
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
             type="button"
+            whileTap={{ scale: 0.92 }}
             onClick={handleBackspace}
             aria-label="Retroceder"
-            className="flex h-16 w-full items-center justify-center rounded-3xl bg-obsidian-900/70 border border-white/5 text-slate-300 transition-all active:scale-95 hover:text-lime-accent"
+            className="flex h-16 w-full items-center justify-center rounded-3xl bg-obsidian-900/70 border border-white/5 text-slate-300 hover:text-lime-accent"
           >
             <Delete className="h-6 w-6" />
-          </button>
+          </motion.button>
         </div>
 
         {settings.pinCode === '1234' && (
@@ -146,7 +163,7 @@ export const PinLockScreen: React.FC = () => {
             </span>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };

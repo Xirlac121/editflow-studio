@@ -52,6 +52,14 @@ export interface ToastMessage {
   type: 'success' | 'info' | 'error';
 }
 
+const SAMPLE_PROJECT_IDS = ['proj-1', 'proj-2', 'proj-3', 'proj-4', 'proj-5', 'proj-6'];
+const SAMPLE_CLIENT_IDS = ['cli-flix', 'cli-lemark', 'cli-nova'];
+const SAMPLE_QUOTE_IDS = ['quo-1', 'quo-2'];
+const SAMPLE_BLOCK_IDS = ['blk-1'];
+
+const DEMO_CLEARED_KEY = 'cutflow_demo_cleared_v1';
+const OFFLINE_CACHE_KEY = 'cutflow_offline_cache_v1';
+
 interface StudioContextValue {
   settings: StudioSettings;
   clients: Client[];
@@ -63,6 +71,8 @@ interface StudioContextValue {
   setActiveTab: (tab: ActiveTab) => void;
   selectedProjectId: string | null;
   setSelectedProjectId: (id: string | null) => void;
+  previewPortalProjectId: string | null;
+  setPreviewPortalProjectId: (id: string | null) => void;
   quickCreateModal: null | 'project' | 'client' | 'quote' | 'block_date';
   setQuickCreateModal: (m: null | 'project' | 'client' | 'quote' | 'block_date') => void;
   quickFilters: QuickFilterState;
@@ -73,6 +83,9 @@ interface StudioContextValue {
   connectSupabase: (creds: CloudCredentials) => Promise<boolean>;
   disconnectSupabase: () => void;
   pushAllToCloud: () => Promise<void>;
+  hasSampleData: boolean;
+  clearSampleData: () => Promise<void>;
+  resetAllWorkspaceData: () => Promise<void>;
   unlockWithPin: (pin: string) => boolean;
   lockNow: () => void;
   updateSettings: (patch: Partial<StudioSettings>) => Promise<void>;
@@ -96,10 +109,15 @@ interface StudioContextValue {
 
 const StudioContext = createContext<StudioContextValue | undefined>(undefined);
 
-const OFFLINE_CACHE_KEY = 'cutflow_offline_cache_v1';
-
 export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Hydrate optimistic cache for instant zero-flicker startup while Supabase connects
+  const demoWasCleared = useMemo(() => {
+    try {
+      return localStorage.getItem(DEMO_CLEARED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }, []);
+
   const cachedBundle = useMemo(() => {
     try {
       const raw = sessionStorage.getItem(OFFLINE_CACHE_KEY);
@@ -114,16 +132,16 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     cachedBundle?.settings || INITIAL_SETTINGS
   );
   const [clients, setClients] = useState<Client[]>(
-    cachedBundle?.clients || INITIAL_CLIENTS
+    cachedBundle?.clients ?? (demoWasCleared ? [] : INITIAL_CLIENTS)
   );
   const [projects, setProjects] = useState<Project[]>(
-    cachedBundle?.projects || INITIAL_PROJECTS
+    cachedBundle?.projects ?? (demoWasCleared ? [] : INITIAL_PROJECTS)
   );
   const [quotes, setQuotes] = useState<Quote[]>(
-    cachedBundle?.quotes || INITIAL_QUOTES
+    cachedBundle?.quotes ?? (demoWasCleared ? [] : INITIAL_QUOTES)
   );
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>(
-    cachedBundle?.blockedDates || INITIAL_BLOCKED_DATES
+    cachedBundle?.blockedDates ?? (demoWasCleared ? [] : INITIAL_BLOCKED_DATES)
   );
 
   const [isLocked, setIsLocked] = useState<boolean>(() => {
@@ -133,6 +151,7 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [previewPortalProjectId, setPreviewPortalProjectId] = useState<string | null>(null);
   const [quickCreateModal, setQuickCreateModal] = useState<
     null | 'project' | 'client' | 'quote' | 'block_date'
   >(null);
@@ -160,12 +179,11 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setToasts((prev) => [...prev, { id, text, type }]);
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, 3400);
+      }, 3600);
     },
     []
   );
 
-  // Apply dark/light theme to <html>
   useEffect(() => {
     const root = document.documentElement;
     if (settings.theme === 'dark') {
@@ -175,7 +193,6 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [settings.theme]);
 
-  // Keep lightweight session cache for fast tab reloads
   useEffect(() => {
     try {
       sessionStorage.setItem(
@@ -193,7 +210,15 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return project.clientChecklist.some((item) => !item.completed);
   }, []);
 
-  // Push entire current workspace to Supabase Cloud
+  const hasSampleData = useMemo(() => {
+    return (
+      projects.some((p) => SAMPLE_PROJECT_IDS.includes(p.id)) ||
+      clients.some((c) => SAMPLE_CLIENT_IDS.includes(c.id)) ||
+      quotes.some((q) => SAMPLE_QUOTE_IDS.includes(q.id)) ||
+      blockedDates.some((b) => SAMPLE_BLOCK_IDS.includes(b.id))
+    );
+  }, [projects, clients, quotes, blockedDates]);
+
   const pushAllToCloud = useCallback(async () => {
     const supabase = getSupabaseClient();
     if (!supabase) return;
@@ -220,7 +245,63 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [settings, clients, projects, quotes, blockedDates]);
 
-  // Connect & Subscribe to Supabase Realtime
+  // Clear ONLY Demo/Sample Data (keeps user's real items intact!)
+  const clearSampleData = useCallback(async () => {
+    localStorage.setItem(DEMO_CLEARED_KEY, 'true');
+    setProjects((prev) => prev.filter((p) => !SAMPLE_PROJECT_IDS.includes(p.id)));
+    setClients((prev) => prev.filter((c) => !SAMPLE_CLIENT_IDS.includes(c.id)));
+    setQuotes((prev) => prev.filter((q) => !SAMPLE_QUOTE_IDS.includes(q.id)));
+    setBlockedDates((prev) => prev.filter((b) => !SAMPLE_BLOCK_IDS.includes(b.id)));
+    if (selectedProjectId && SAMPLE_PROJECT_IDS.includes(selectedProjectId)) {
+      setSelectedProjectId(null);
+    }
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      await Promise.all([
+        supabase.from('projects').delete().in('id', SAMPLE_PROJECT_IDS),
+        supabase.from('clients').delete().in('id', SAMPLE_CLIENT_IDS),
+        supabase.from('quotes').delete().in('id', SAMPLE_QUOTE_IDS),
+        supabase.from('blocked_dates').delete().in('id', SAMPLE_BLOCK_IDS),
+      ]);
+    }
+    showToast('¡Datos de ejemplo eliminados! Tu estudio está limpio.', 'success');
+  }, [selectedProjectId, showToast]);
+
+  // Wipe ALL workspace items (clean slate)
+  const resetAllWorkspaceData = useCallback(async () => {
+    localStorage.setItem(DEMO_CLEARED_KEY, 'true');
+    const allProjIds = projects.map((p) => p.id);
+    const allCliIds = clients.map((c) => c.id);
+    const allQuoIds = quotes.map((q) => q.id);
+    const allBlkIds = blockedDates.map((b) => b.id);
+
+    setProjects([]);
+    setClients([]);
+    setQuotes([]);
+    setBlockedDates([]);
+    setSelectedProjectId(null);
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      await Promise.all([
+        allProjIds.length
+          ? supabase.from('projects').delete().in('id', allProjIds)
+          : Promise.resolve(),
+        allCliIds.length
+          ? supabase.from('clients').delete().in('id', allCliIds)
+          : Promise.resolve(),
+        allQuoIds.length
+          ? supabase.from('quotes').delete().in('id', allQuoIds)
+          : Promise.resolve(),
+        allBlkIds.length
+          ? supabase.from('blocked_dates').delete().in('id', allBlkIds)
+          : Promise.resolve(),
+      ]);
+    }
+    showToast('Estudio reiniciado completamente en blanco', 'info');
+  }, [projects, clients, quotes, blockedDates, showToast]);
+
   useEffect(() => {
     const supabase = getSupabaseClient();
     if (!supabase) {
@@ -272,8 +353,9 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           (projectsRes.data?.length ?? 0) === 0 &&
           (quotesRes.data?.length ?? 0) === 0;
 
-        if (cloudIsEmpty) {
-          // Seed cloud automatically with current state on first connection
+        const clearedDemoFlag = localStorage.getItem(DEMO_CLEARED_KEY) === 'true';
+
+        if (cloudIsEmpty && !clearedDemoFlag) {
           await Promise.all([
             supabase.from('studio_settings').upsert(toDbSettings(settings)),
             clients.length
@@ -411,7 +493,10 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const connectSupabase = useCallback(
     async (creds: CloudCredentials): Promise<boolean> => {
       saveCloudCredentials(creds);
-      setCloudCredentials({ url: creds.url.trim(), anonKey: creds.anonKey.trim() });
+      setCloudCredentials({
+        url: creds.url.trim().replace(/\/+$/, ''),
+        anonKey: creds.anonKey.trim(),
+      });
       showToast('Credenciales guardadas. Sincronizando con Supabase...', 'info');
       return true;
     },
@@ -426,7 +511,6 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     showToast('Desconectado de Supabase Cloud', 'info');
   }, [showToast]);
 
-  // PIN Lock handlers
   const unlockWithPin = useCallback(
     (pin: string): boolean => {
       if (pin === settings.pinCode) {
@@ -444,7 +528,6 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsLocked(true);
   }, []);
 
-  // Settings
   const updateSettings = useCallback(
     async (patch: Partial<StudioSettings>) => {
       const next: StudioSettings = {
@@ -464,7 +547,6 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [settings, showToast]
   );
 
-  // Projects CRUD
   const upsertProject = useCallback(
     async (project: Project) => {
       const updated = { ...project, updatedAt: new Date().toISOString() };
@@ -516,7 +598,6 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [projects, showToast]
   );
 
-  // Clients CRUD
   const upsertClient = useCallback(
     async (client: Client) => {
       setClients((prev) => {
@@ -547,7 +628,6 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [showToast]
   );
 
-  // Quotes CRUD & 1-Click Conversion
   const upsertQuote = useCallback(
     async (quote: Quote) => {
       setQuotes((prev) => {
@@ -633,7 +713,6 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [quotes, upsertProject, upsertQuote, showToast]
   );
 
-  // Blocked Dates CRUD
   const upsertBlockedDate = useCallback(
     async (b: BlockedDate) => {
       setBlockedDates((prev) => {
@@ -666,12 +745,11 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [showToast]
   );
 
-  // Backups (JSON + CSV)
   const exportBackupJson = useCallback(() => {
     const payload = {
       exportedAt: new Date().toISOString(),
       app: 'CutFlow Studio',
-      version: '1.0.0',
+      version: '1.1.0',
       settings,
       clients,
       projects,
@@ -748,7 +826,11 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const csvContent =
       '\uFEFF' +
-      [projHeaders.map(esc).join(','), ...projRows.map((r) => r.join(',')), ...clientRows.map((r) => r.join(','))].join('\n');
+      [
+        projHeaders.map(esc).join(','),
+        ...projRows.map((r) => r.join(',')),
+        ...clientRows.map((r) => r.join(',')),
+      ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -811,6 +893,8 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setActiveTab,
     selectedProjectId,
     setSelectedProjectId,
+    previewPortalProjectId,
+    setPreviewPortalProjectId,
     quickCreateModal,
     setQuickCreateModal,
     quickFilters,
@@ -821,6 +905,9 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     connectSupabase,
     disconnectSupabase,
     pushAllToCloud,
+    hasSampleData,
+    clearSampleData,
+    resetAllWorkspaceData,
     unlockWithPin,
     lockNow,
     updateSettings,
@@ -842,7 +929,9 @@ export const StudioProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     hasMissingClientMaterial,
   };
 
-  return <StudioContext.Provider value={value}>{children}</StudioContext.Provider>;
+  return (
+    <StudioContext.Provider value={value}>{children}</StudioContext.Provider>
+  );
 };
 
 export function useStudio() {

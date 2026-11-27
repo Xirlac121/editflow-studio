@@ -35,6 +35,14 @@
   background: rgba(217, 249, 80, 0.5);
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* PIN shake animation */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
@@ -43,6 +51,78 @@
 }
 .animate-shake {
   animation: shake 0.38s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* Motion Graphics Ambient Floating Orbs */
+@keyframes floatOrbSlow {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(28px, -22px, 0) scale(1.07);
+  }
+  66% {
+    transform: translate3d(-18px, 18px, 0) scale(0.95);
+  }
+}
+
+@keyframes floatOrbReverse {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-30px, -25px, 0) scale(1.08);
+  }
+}
+
+.animate-orb-slow {
+  animation: floatOrbSlow 16s ease-in-out infinite;
+}
+
+.animate-orb-reverse {
+  animation: floatOrbReverse 20s ease-in-out infinite;
+}
+
+/* Motion Graphics Shimmer Sweep on Hero Cards & CTAs */
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  45%, 100% {
+    transform: translateX(240%) skewX(-18deg);
+  }
+}
+
+.motion-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.motion-shimmer::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.24),
+    transparent
+  );
+  animation: shimmerSweep 5.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* NLE Timeline Ruler Subtle Pattern */
+.timeline-ruler-bg {
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.08) 0px,
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 1px,
+    transparent 12px
+  );
 }
 
 /* Safe area padding for PWA mobile bottom navigation */

@@ -63,10 +63,10 @@ const KanbanCardContent: React.FC<
   return (
     <div
       onClick={onOpen}
-      className={`group rounded-[24px] bg-white dark:bg-obsidian-900 border p-4 transition-all cursor-pointer select-none ${
+      className={`group rounded-[24px] bg-white dark:bg-obsidian-900 border p-4 transition-all duration-200 cursor-pointer select-none ${
         isOverlay
           ? 'border-lime-accent shadow-2xl scale-[1.03] rotate-1 ring-2 ring-lime-accent/50'
-          : 'border-slate-200/90 dark:border-white/10 hover:border-lime-accent/60 shadow-xs'
+          : 'border-slate-200/90 dark:border-white/10 hover:border-lime-accent/60 hover:-translate-y-0.5 shadow-xs hover:shadow-lg'
       }`}
     >
       {/* Alert Banner when missing client material */}
